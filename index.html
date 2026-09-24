@@ -247,6 +247,42 @@ h1,h2,h3,p{margin:0}
 .spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite;margin:40vh auto 0}
 @keyframes spin{to{transform:rotate(360deg)}}
 img.logo,.topbar img,.pHead img{mix-blend-mode:multiply}
+.credit{text-align:center;font-size:12px;color:#AEB6CA;letter-spacing:.4px;margin:26px 0 4px;font-weight:600}
+.ahead{display:inline-block;font-size:11px;font-weight:800;color:#5B2BC0;background:#F1EAFF;border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:2px}
+.now{display:inline-block;font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:2px}
+.growth{background:radial-gradient(130% 90% at 15% 0%,#3353B8 0%,#1B2A63 55%,#131C45 100%);color:#fff;border-radius:26px;padding:20px 16px 18px;overflow:hidden;position:relative}
+.growth .gh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px}
+.growth .gh h2{font-size:20px;font-weight:900;letter-spacing:-.5px}
+.growth .gh span{font-size:12.5px;opacity:.75;font-weight:700}
+.growth .big{font-size:40px;font-weight:900;letter-spacing:-1.5px;line-height:1;margin-top:14px;padding:0 4px}
+.growth .big small{font-size:15px;opacity:.7;font-weight:700;letter-spacing:0;margin-left:4px}
+.growth .cap{font-size:13.5px;opacity:.85;margin-top:6px;padding:0 4px;line-height:1.5}
+.radar{display:block;width:100%;max-width:400px;margin:6px auto 0}
+.radar text{font-family:var(--font)}
+.legend{display:flex;justify-content:center;gap:14px;font-size:12px;font-weight:700;opacity:.85;margin-top:2px}
+.legend i{display:inline-block;width:16px;height:4px;border-radius:2px;vertical-align:3px;margin-right:5px}
+.gtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.gtiles div{background:rgba(255,255,255,.09);border-radius:14px;padding:10px}
+.gtiles small{display:block;font-size:11.5px;opacity:.75;font-weight:700}
+.gtiles b{display:block;font-size:20px;font-weight:900;margin-top:2px}
+.gtiles b span{font-size:12px;opacity:.6}
+.journey{position:relative;height:96px;margin:6px 18px 0}
+.journey .track{position:absolute;left:0;right:0;top:56px;height:10px;border-radius:6px;background:var(--line)}
+.journey .track i{display:block;height:100%;min-width:10px;border-radius:6px;background:linear-gradient(90deg,#16B6E8,#1E6BFF 55%,#7A3FE0)}
+.journey .ms{position:absolute;top:8px;width:44px;margin-left:-22px;text-align:center}
+.journey .ms svg{width:32px;height:35px;display:block;margin:0 auto}
+.journey .ms small{display:block;font-size:10.5px;font-weight:800;color:var(--faint);margin-top:26px}
+.journey .ms.off svg{filter:grayscale(1);opacity:.35}
+.journey .me{position:absolute;top:51px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:#fff;border:5px solid #1E6BFF;box-shadow:0 0 0 4px rgba(30,107,255,.18)}
+.journey.dark .track{background:rgba(255,255,255,.16)}
+.journey.dark .ms small{color:rgba(255,255,255,.7)}
+.journey.dark .me{border-color:#6FE3FF;box-shadow:0 0 0 5px rgba(111,227,255,.25)}
+.journey.dark .ms.off svg{opacity:.28}
+.growBadges{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.growBadges button{background:rgba(255,255,255,.08);border:0;border-radius:14px;padding:8px 6px 6px;width:96px;color:#fff}
+.growBadges svg{width:46px;height:51px;display:block;margin:0 auto}
+.growBadges b{display:block;font-size:11.5px;margin-top:3px}
+.nextLine.dark{color:#fff;justify-content:center;margin-top:14px;font-size:13.5px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (min-width:700px){body{padding-bottom:90px}.nav .wrap{max-width:520px}}
 </style>
@@ -275,6 +311,7 @@ var CORE = (function () {
     G: { g: 4, name: '보호자 소통' },
     M: { g: 4, name: '관계회복·화해중재 연계' }
   };
+  var SKILL_TOTAL = { Q: 13, L: 12, F: 12, S: 13, R: 13, P: 12, G: 13, M: 12 };
   var SLOT = { C1: 'CORE 1', C2: 'CORE 2', C3: 'CORE 3', P1: 'PLUS 1', P2: 'PLUS 2' };
   var GAME = {
     sim: '면담 시뮬레이션', call: '민원 전화', best: '베스트 초이스', rewrite: '고쳐 쓰기',
@@ -410,12 +447,13 @@ var CORE = (function () {
   }
   /* opened: 현재 열린 CASE 배열, week: 이번 주차 */
   function ruleScores(st, opened, allCases, week) {
-    var sig = skillSignals(st, allCases), out = {};
+    var sig = skillSignals(st, allCases), out = {}, wk = Math.max(1, week);
     opened.forEach(function (c) {
       if (st.done[c.id]) return;
       var x = sig[c.s], score = 0, why = [];
-      if (c.w === week) { score += 2 + (c.slot.charAt(0) === 'C' ? 1 : 0); why.push([2, '이번 주 ' + SLOT[c.slot] + ' CASE예요.']); }
-      else if (c.w < week) { score += 1; why.push([1, week - c.w === 1 ? '지난주에 열린 CASE예요.' : c.w + '주차에 열린 CASE예요.']); }
+      if (c.w === wk) { score += 2 + (c.slot.charAt(0) === 'C' ? 1 : 0); why.push([2, '이번 주 ' + SLOT[c.slot] + ' CASE예요.']); }
+      else if (c.w < wk) { score += 1; why.push([1, wk - c.w === 1 ? '지난주에 열린 CASE예요.' : c.w + '주차에 열린 CASE예요.']); }
+      else { score += c.w === wk + 1 ? 0.5 : 0.1; why.push([0.5, c.w === wk + 1 ? '다음 주 CASE를 미리 만나 볼 수 있어요.' : c.w + '주차 CASE를 미리 만나 볼 수 있어요.']); }
       var need = x.low * 1.2 + x.rev * 0.8 + x.hard * 1.0;
       if (need > 0) { score += Math.min(4, need); why.push([3 + need, '최근 ' + SKILLS[c.s].name + ' CASE에서 다시보기·재도전이 있어 조금 더 만나볼 영역으로 골랐어요.']); }
       if (x.done === 0 && Object.keys(st.done).length >= 3) { score += 1.5; why.push([2.5, '아직 만나지 않은 ' + SKILLS[c.s].name + ' 영역이에요.']); }
@@ -442,7 +480,7 @@ var CORE = (function () {
   }
 
   return {
-    GROUPS: GROUPS, SKILLS: SKILLS, SLOT: SLOT, GAME: GAME, QUICK: QUICK, GRADE: GRADE, BADGES: BADGES,
+    GROUPS: GROUPS, SKILLS: SKILLS, SKILL_TOTAL: SKILL_TOTAL, SLOT: SLOT, GAME: GAME, QUICK: QUICK, GRADE: GRADE, BADGES: BADGES,
     grade: grade, emptyState: emptyState, stats: stats, awardBadges: awardBadges, nextBadge: nextBadge,
     ruleScores: ruleScores, blend: blend, skillSignals: skillSignals
   };
@@ -582,7 +620,7 @@ function applyLocal(ev) {
   var st = S.st, t = Date.now(), c = byId(ev.id);
   if (ev.type === 'complete') {
     var d = st.done[c.id];
-    if (!d) { st.done[c.id] = { g: ev.g, first: ev.g, at: t, tries: 1 }; if (st.recNow.indexOf(c.id) >= 0) st.recDone++; }
+    if (!d) { st.done[c.id] = { g: ev.g, first: ev.g, at: t, t0: t, tries: 1 }; if (st.recNow.indexOf(c.id) >= 0) st.recDone++; }
     else { d.tries = (d.tries || 1) + 1; d.g = Math.max(d.g, ev.g); d.at = t; }
     if (S.week > 0 && st.weeks.indexOf(S.week) < 0) st.weeks.push(S.week);
   } else if (ev.type === 'review') st.rev[c.id] = (st.rev[c.id] || 0) + 1;
@@ -591,7 +629,7 @@ function applyLocal(ev) {
   else if (ev.type === 'interest') st.interest = ev.skills.slice(0, 3);
 }
 function localRecs() {
-  var opened = S.cases.filter(function (c) { return c.w <= S.week; });
+  var opened = S.cases;
   S.recs = CORE.blend(CORE.ruleScores(S.st, opened, S.cases, S.week), null, S.cases, 3);
   S.st.recNow = S.recs.map(function (r) { return r.id; });
   S.next = CORE.nextBadge(S.st, S.cases);
@@ -626,7 +664,7 @@ function renderLogin(msg, demoForm) {
       '<p class="err" id="er" role="alert">' + esc(msg || '') + '</p><button class="btn" id="go">로그인</button>' +
       '<button type="button" class="link" id="sw">시연용으로 둘러보기</button></form>';
   }
-  h += '<p class="tiny" style="text-align:center;margin-top:18px">문의: ' + esc(CFG.contact || '담당자') + '</p></main>';
+  h += '<p class="tiny" style="text-align:center;margin-top:18px">문의: ' + esc(CFG.contact || '담당자') + '</p><p class="credit">Designed by J.M.Lee</p></main>';
   $app.innerHTML = h;
   var sw = document.getElementById('sw'); if (sw) sw.onclick = function () { renderLogin('', !demoForm); };
   document.getElementById('f').onsubmit = function (e) {
@@ -701,20 +739,75 @@ function caseRow(c, rec) {
     '<span class="t"><b>' + esc(c.title) + '</b><small>' + CORE.GAME[c.game] + (CORE.QUICK[c.game] ? '<span class="quick">30~60초</span>' : '') + ' · ' + CORE.SKILLS[c.s].name + '</small></span>' + dot(c) + '</button>';
 }
 
+/* ---------- 성장 시각화 ---------- */
+var AXES = [['Q', '사실확인 질문'], ['L', '경청·진술'], ['F', '공정·중립'], ['S', '비밀유지'], ['R', '보고서 작성'], ['P', '절차·자료'], ['G', '보호자 소통'], ['M', '관계회복']];
+function skillCounts(before) {
+  var n = {}; AXES.forEach(function (a) { n[a[0]] = 0; });
+  Object.keys(S.st.done).forEach(function (id) {
+    var c = byId(id), d = S.st.done[id]; if (!c) return;
+    if (before && (d.t0 || d.at) > before) return; n[c.s]++;
+  });
+  return n;
+}
+function radar() {
+  var cur = skillCounts(0), prev = skillCounts(Date.now() - 7 * 86400000);
+  var cx = 180, cy = 158, R = 98, N = AXES.length;
+  function pt(i, r) { var a = (-90 + i * 360 / N) * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  function poly(vals) { return vals.map(function (v, i) { var p = pt(i, Math.max(3, v * R)); return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '); }
+  var ratio = function (m) { return AXES.map(function (a) { return Math.sqrt(Math.min(1, m[a[0]] / CORE.SKILL_TOTAL[a[0]])); }); }; // 초반 성장이 잘 보이도록 제곱근 눈금
+  var vc = ratio(cur), vp = ratio(prev), h = '';
+  [0.25, 0.5, 0.75, 1].forEach(function (k) { h += '<polygon points="' + poly(AXES.map(function () { return k; })) + '" fill="' + (k === 1 ? 'rgba(255,255,255,.04)' : 'none') + '" stroke="rgba(255,255,255,' + (k === 1 ? .35 : .14) + ')" stroke-width="1"/>'; });
+  AXES.forEach(function (a, i) { var p = pt(i, R); h += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0] + '" y2="' + p[1] + '" stroke="rgba(255,255,255,.14)"/>'; });
+  // 역량군 색 띠(바깥 호)
+  CORE.GROUPS.forEach(function (g, gi) {
+    var a0 = (-90 + (gi * 2) * 45 - 20) * Math.PI / 180, a1 = (-90 + (gi * 2 + 1) * 45 + 20) * Math.PI / 180, r = R + 9;
+    h += '<path d="M' + (cx + r * Math.cos(a0)) + ' ' + (cy + r * Math.sin(a0)) + ' A' + r + ' ' + r + ' 0 0 1 ' + (cx + r * Math.cos(a1)) + ' ' + (cy + r * Math.sin(a1)) + '" fill="none" stroke="' + g.color + '" stroke-width="4" stroke-linecap="round" opacity=".95"/>';
+  });
+  h += '<polygon points="' + poly(vp) + '" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+  h += '<polygon class="rpoly" points="' + poly(vc) + '" fill="url(#rg)" fill-opacity=".55" stroke="#6FE3FF" stroke-width="2.5" stroke-linejoin="round"/>';
+  AXES.forEach(function (a, i) {
+    var p = pt(i, Math.max(3, vc[i] * R)), gcol = CORE.GROUPS[CORE.SKILLS[a[0]].g - 1].color;
+    h += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4.5" fill="#fff" stroke="' + gcol + '" stroke-width="2.5"/>';
+    var lp = pt(i, R + 26), anchor = Math.abs(lp[0] - cx) < 8 ? 'middle' : (lp[0] > cx ? 'start' : 'end'), up = cur[a[0]] - prev[a[0]];
+    h += '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] - 2).toFixed(1) + '" text-anchor="' + anchor + '" font-size="12" font-weight="800" fill="#fff">' + a[1] + '</text>' +
+      '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 13).toFixed(1) + '" text-anchor="' + anchor + '" font-size="11" font-weight="700" fill="rgba(255,255,255,.7)">' + cur[a[0]] + '/' + CORE.SKILL_TOTAL[a[0]] + (up > 0 ? '<tspan fill="#7CF0C8"> +' + up + '</tspan>' : '') + '</text>';
+  });
+  return { svg: '<svg class="radar" viewBox="-34 0 428 318" role="img" aria-label="실천역량 8개 학습 현황 그래프"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#16B6E8"/><stop offset="1" stop-color="#7A3FE0"/></linearGradient></defs>' + h + '</svg>', cur: cur, prev: prev };
+}
+function journey(done, dark) {
+  var h = '<div class="journey' + (dark ? ' dark' : '') + '" role="img" aria-label="실전100 여정 ' + done + '개 완료"><div class="track"><i style="width:' + done + '%"></i></div>';
+  [10, 25, 50, 75, 100].forEach(function (m) {
+    var b = badgeDef('C' + m), on = !!S.st.badges['C' + m];
+    h += '<div class="ms' + (on ? '' : ' off') + '" style="left:' + m + '%">' + shield(b) + '<small>' + m + '</small></div>';
+  });
+  return h + '<span class="me" style="left:' + Math.max(0, Math.min(100, done)) + '%"></span></div>';
+}
+function growthCard(s) {
+  var r = radar(), gained = 0, top = null, topUp = 0;
+  AXES.forEach(function (a) { var up = r.cur[a[0]] - r.prev[a[0]]; gained += up; if (up > topUp) { topUp = up; top = a[1]; } });
+  var cap = gained ? '지난주보다 CASE ' + gained + '개만큼 넓어졌어요.' + (top ? ' 가장 많이 자란 영역은 ' + top + '이에요.' : '') : (s.done ? '이번 주에 CASE를 마치면 그래프가 한 겹 더 넓어져요.' : '첫 CASE를 마치면 나만의 역량 그래프가 그려져요.');
+  var got = Object.keys(S.st.badges).sort(function (a, b) { return S.st.badges[b] - S.st.badges[a]; }).slice(0, 3);
+  return '<section class="growth"><div class="gh"><h2>나의 성장</h2><span>' + esc(S.user ? S.user.name : '') + ' 조사관님</span></div>' +
+    '<p class="big num">' + s.done + '<small>/ 100 CASE</small></p><p class="cap">' + esc(cap) + '</p>' +
+    r.svg + '<div class="legend"><span><i style="background:#6FE3FF"></i>지금</span><span><i style="background:rgba(255,255,255,.55)"></i>지난주</span></div>' +
+    '<p class="lbl" style="color:rgba(255,255,255,.7);margin:18px 4px 0">실전100 여정</p>' + journey(s.done, true) +
+    '<div class="gtiles"><div><small>모은 TOOL</small><b class="num">' + s.tools + '<span> /100</span></b></div><div><small>참여 주차</small><b class="num">' + s.weeks + '<span> 주</span></b></div><div><small>받은 배지</small><b class="num">' + Object.keys(S.st.badges).length + '<span> /' + CORE.BADGES.length + '</span></b></div></div>' +
+    (got.length ? '<div class="growBadges">' + got.map(function (code) { var b = badgeDef(code); return '<button data-badge="' + code + '">' + shield(b) + '<b>' + b.name + '</b></button>'; }).join('') + '</div>' : '') +
+    (S.next ? '<p class="nextLine dark">' + ICON.spark + esc(S.next.text) + '</p>' : '') + '</section>';
+}
+
 /* ---------- 오늘 ---------- */
 function viewHome() {
   var h = '<section class="hero"><img class="logo" src="assets/logo.webp" alt="부천 학교폭력 전담조사관 톡!100"><p class="subtitle">AI 기반 부천 학교폭력 전담조사관 역량강화 앱</p>' +
     '<img class="brand" src="assets/brand100.webp" alt="100 CASE, 100 SEC, 100 TOOL"></section>';
-  if (S.week < 1) {
-    h += '<section class="sec"><div class="empty">1주차 CASE는 <b>' + esc(openDate(1) || '곧') + '</b>에 열립니다. 열리면 이곳에 이번 주 CASE가 나타납니다.</div></section>';
-  } else {
-    var wk = S.cases.filter(function (c) { return c.w === S.week; }), done = wk.filter(function (c) { return S.st.done[c.id]; }).length;
-    h += '<section class="sec"><div class="secHead"><h2>이번 주 · ' + S.week + '주차</h2><span class="tiny num">' + done + ' / 5 완료</span></div><div class="list">' +
-      wk.map(function (c) { return caseRow(c); }).join('') + '</div></section>';
-  }
+  var cw = Math.max(1, S.week), wk = S.cases.filter(function (c) { return c.w === cw; }), done = wk.filter(function (c) { return S.st.done[c.id]; }).length;
+  h += '<section class="sec"><div class="secHead"><h2>' + (S.week < 1 ? '1주차 미리 보기' : '이번 주 · ' + S.week + '주차') + '</h2><span class="tiny num">' + done + ' / 5 완료</span></div>' +
+    (S.week < 1 && openDate(1) ? '<p class="muted" style="font-size:13.5px;margin:-4px 0 10px">1주차는 ' + esc(openDate(1)) + '에 시작해요. 지금 미리 학습할 수 있어요.</p>' : '') +
+    '<div class="list">' + wk.map(function (c) { return caseRow(c); }).join('') + '</div>' +
+    (S.mode === 'live' && cw < S.totalWeeks && done === 5 ? '<button class="btn ghost" data-tab="all" style="height:46px;margin-top:10px">다음 주차 미리 하기</button>' : '') + '</section>';
   h += '<section class="sec"><div class="secHead"><div class="aiHead"><span class="aiMark">AI톡</span><h2>맞춤추천</h2></div></div>' +
     '<p class="muted" style="font-size:13.5px;margin:-4px 0 10px;line-height:1.55">내 학습 기록과, 학습 흐름이 비슷한 조사관들의 패턴을 분석해 골랐어요.</p>';
-  if (!S.recs.length) h += '<div class="empty">열린 CASE를 모두 만났어요. 다음 주 CASE가 열리면 다시 골라 드릴게요.</div>';
+  if (!S.recs.length) h += '<div class="empty">지금 만날 수 있는 CASE를 모두 마쳤어요.</div>';
   else h += '<div class="recs">' + S.recs.map(function (r) {
     var c = byId(r.id); if (!c) return '';
     return '<button class="rec" data-case="' + c.id + '" data-rec="1"><span class="meta"><span class="tag ' + r.by + '">' + (r.by === 'pattern' ? '패턴 분석' : '학습 기록 분석') + '</span>' + c.w + '주차 ' + CORE.SLOT[c.slot] + ' · ' + CORE.GAME[c.game] + '</span>' +
@@ -725,27 +818,31 @@ function viewHome() {
   h += '<section class="sec"><div class="secHead"><h2>나의 실전100</h2></div><button class="mine" data-tab="my"><div class="tiles">' +
     '<div class="tile"><small>완료 CASE</small><b class="num">' + s.done + '<span> /100</span></b></div>' +
     '<div class="tile"><small>모은 TOOL</small><b class="num">' + s.tools + '<span> /100</span></b></div>' +
-    '<div class="tile"><small>참여 주차</small><b class="num">' + s.weeks + '<span> 주</span></b></div></div>' +
-    (S.next ? '<p class="nextLine">' + ICON.spark + esc(S.next.text) + '</p>' : '') + '</button></section>';
+    '<div class="tile"><small>참여 주차</small><b class="num">' + s.weeks + '<span> 주</span></b></div></div>' + journey(s.done) +
+    (S.next ? '<p class="nextLine">' + ICON.spark + esc(S.next.text) + '</p>' : '') + '</button></section>' +
+    '<p class="credit">Designed by J.M.Lee</p>';
   return h;
 }
 
 /* ---------- 실전100 ---------- */
 function viewAll() {
-  var h = '<div class="chips" role="group" aria-label="역량군 거르기" style="margin-top:14px">' +
+  var h = '<p class="muted" style="font-size:13.5px;line-height:1.55;margin-top:14px">매주 5개 CASE가 이번 주 학습으로 안내됩니다. 원하면 앞 주차 CASE도 미리 풀 수 있어요.</p><div class="chips" role="group" aria-label="역량군 거르기" style="margin-top:10px">' +
     ['전체'].concat(CORE.GROUPS.map(function (g) { return g.name; })).map(function (n, i) {
       return '<button class="chip" data-filter="' + i + '" aria-pressed="' + (S.filter === i) + '">' + n + '</button>';
     }).join('') + '</div>';
-  var ow = S.openWeek == null ? S.week : S.openWeek;
+  var ow = S.openWeek == null ? Math.max(1, S.week) : S.openWeek;
   for (var w = 1; w <= S.totalWeeks; w++) {
-    if (w > S.week) {
-      h += '<div class="week"><div class="weekBtn" style="color:var(--faint)"><b>' + w + '주차</b><span class="tiny">' + (openDate(w) ? openDate(w) + ' 공개' : '공개 예정') + '</span></div></div>';
+    var wk = S.cases.filter(function (c) { return c.w === w; });
+    if (!wk.length) {
+      h += '<div class="week"><div class="weekBtn" style="color:var(--faint)"><b>' + w + '주차</b><span class="tiny">' + (S.mode === 'demo' ? '시연에서는 1주차만 열려요' : '준비 중') + '</span></div></div>';
       continue;
     }
-    var wk = S.cases.filter(function (c) { return c.w === w; }), d = wk.filter(function (c) { return S.st.done[c.id]; }).length;
+    var d = wk.filter(function (c) { return S.st.done[c.id]; }).length;
+    var mark = w === Math.max(1, S.week) ? '<span class="now">이번 주</span>' : (w > S.week ? '<span class="ahead">미리 하기</span>' : '');
+    var when = w > S.week && openDate(w) ? '<small class="tiny" style="display:block;font-weight:600;margin-top:2px">' + openDate(w) + ' 주차</small>' : '';
     var shown = wk.filter(function (c) { return !S.filter || CORE.SKILLS[c.s].g === S.filter; });
     var open = ow === w || (S.filter && shown.length);
-    h += '<div class="week"><button class="weekBtn" data-week="' + w + '" aria-expanded="' + !!open + '"><b>' + w + '주차</b><span class="bar"><i style="width:' + d * 20 + '%"></i></span><span class="tiny num">' + d + '/5</span></button>' +
+    h += '<div class="week"><button class="weekBtn" data-week="' + w + '" aria-expanded="' + !!open + '"><b>' + w + '주차' + mark + when + '</b><span class="bar"><i style="width:' + d * 20 + '%"></i></span><span class="tiny num">' + d + '/5</span></button>' +
       (open ? '<div class="weekBody">' + (shown.length ? shown.map(function (c) { return caseRow(c); }).join('') : '<p class="row muted" style="font-size:14px">이 주에는 해당 역량군 CASE가 없어요.</p>') + '</div>' : '') + '</div>';
   }
   return h;
@@ -753,13 +850,13 @@ function viewAll() {
 
 /* ---------- 맞춤훈련 ---------- */
 function viewFit() {
-  var opened = S.cases.filter(function (c) { return c.w <= S.week; }), sel = S.st.interest;
+  var opened = S.cases, sel = S.st.interest;
   var h = '<p class="muted" style="font-size:14.5px;line-height:1.6;margin-top:16px">더 연습하고 싶은 실천역량을 1~3개 고르세요. 고른 영역은 AI톡 맞춤추천에도 반영됩니다.</p>';
   CORE.GROUPS.forEach(function (g) {
     h += '<p class="lbl" style="color:' + g.color + '">' + g.name + '</p><div class="skillGrid" style="margin-top:8px">';
     Object.keys(CORE.SKILLS).filter(function (k) { return CORE.SKILLS[k].g === g.id; }).forEach(function (k) {
       var all = opened.filter(function (c) { return c.s === k; }), d = all.filter(function (c) { return S.st.done[c.id]; }).length;
-      h += '<button class="skill" data-skill="' + k + '" aria-pressed="' + (sel.indexOf(k) >= 0) + '"><small style="color:' + g.color + '">' + g.name + '</small><b>' + CORE.SKILLS[k].name + '</b><em class="num">열린 CASE ' + all.length + '개 중 ' + d + '개 학습</em></button>';
+      h += '<button class="skill" data-skill="' + k + '" aria-pressed="' + (sel.indexOf(k) >= 0) + '"><small style="color:' + g.color + '">' + g.name + '</small><b>' + CORE.SKILLS[k].name + '</b><em class="num">CASE ' + all.length + '개 중 ' + d + '개 학습</em></button>';
     });
     h += '</div>';
   });
@@ -768,7 +865,7 @@ function viewFit() {
   var fresh = pool.filter(function (c) { return !S.st.done[c.id]; });
   var again = pool.filter(function (c) { var d = S.st.done[c.id]; return d && (d.g < 2 || S.st.diff[c.id] === 'h'); });
   h += '<section class="sec"><div class="secHead"><h2>새로 만날 CASE</h2><span class="tiny num">' + fresh.length + '개</span></div>' +
-    (fresh.length ? '<div class="list">' + fresh.map(function (c) { return caseRow(c); }).join('') + '</div>' : '<div class="empty">고른 영역의 열린 CASE를 모두 만났어요.</div>') + '</section>';
+    (fresh.length ? '<div class="list">' + fresh.map(function (c) { return caseRow(c); }).join('') + '</div>' : '<div class="empty">고른 영역의 CASE를 모두 만났어요.</div>') + '</section>';
   h += '<section class="sec"><div class="secHead"><h2>한 번 더 해 볼 CASE</h2><span class="tiny num">' + again.length + '개</span></div>' +
     (again.length ? '<div class="list">' + again.map(function (c) { return caseRow(c); }).join('') + '</div>' : '<div class="empty">다시 도전할 CASE가 생기면 여기에 모아 둘게요.</div>') + '</section>';
   return h;
@@ -795,21 +892,11 @@ function viewTools() {
 /* ---------- MY ---------- */
 function viewMy() {
   var s = CORE.stats(S.st, S.cases);
-  var h = '<section class="sec" style="margin-top:18px"><div class="card">' +
-    '<p style="font-size:14px;color:var(--sub);font-weight:700">' + esc(S.user ? S.user.name : '') + ' 조사관님</p>' +
-    '<h2 style="font-size:21px;margin-top:2px;letter-spacing:-.5px">나의 실전100</h2>' +
-    '<div class="tiles" style="margin-top:12px"><div class="tile"><small>완료 CASE</small><b class="num">' + s.done + '<span> /100</span></b></div>' +
-    '<div class="tile"><small>모은 TOOL</small><b class="num">' + s.tools + '<span> /100</span></b></div>' +
-    '<div class="tile"><small>참여 주차</small><b class="num">' + s.weeks + '<span> 주</span></b></div></div>' +
-    '<div class="gbars" style="margin-top:16px">' + CORE.GROUPS.map(function (g) {
+  var h = '<div class="sec" style="margin-top:18px">' + growthCard(s) + '</div>' +
+    '<section class="sec"><div class="secHead"><h2>역량군별 여정</h2></div><div class="card"><div class="gbars">' + CORE.GROUPS.map(function (g) {
       return '<div class="gbar"><span>' + g.name + '</span><span class="bar"><i style="width:' + Math.round(s.perGroup[g.id] / 25 * 100) + '%;background:' + g.color + '"></i></span><span class="tiny num">' + s.perGroup[g.id] + '/25</span></div>';
     }).join('') + '</div></div></section>';
   if (s.done >= 100) h += '<section class="sec"><div class="card" style="text-align:center"><p style="font-weight:900;font-size:18px">실전100 완주</p><p class="muted" style="margin-top:6px;line-height:1.6">100개의 조사 장면을 만났습니다.<br>경험에 기준을 더한 20주였습니다.</p></div></section>';
-  var got = Object.keys(S.st.badges).sort(function (a, b) { return S.st.badges[b] - S.st.badges[a]; }).slice(0, 3);
-  h += '<section class="sec"><div class="secHead"><h2>최근 받은 배지</h2></div>' +
-    (got.length ? '<div class="card"><div class="badgeWall">' + got.map(function (code) { var b = badgeDef(code); return '<button class="badge" data-badge="' + code + '">' + shield(b) + '<b>' + b.name + '</b></button>'; }).join('') + '</div></div>' :
-      '<div class="empty">첫 배지는 CASE 10개를 마치면 받을 수 있어요.</div>') +
-    (S.next ? '<p class="nextLine" style="margin-top:12px">' + ICON.spark + esc(S.next.text) + '</p>' : '') + '</section>';
   var groups = [['단계별 배지', 'stage'], ['분야별 배지', 'group'], ['꾸준히 참여', 'steady'], ['다시보기 · TOOL · 맞춤', 'etc']];
   h += '<section class="sec"><div class="secHead"><h2>배지 모음</h2><span class="tiny num">' + Object.keys(S.st.badges).length + ' / ' + CORE.BADGES.length + '</span></div><div class="card">';
   groups.forEach(function (gr) {
@@ -871,7 +958,7 @@ function drawPlayer() {
     '<span class="info">CASE ' + c.id + ' · ' + c.w + '주차 ' + CORE.SLOT[c.slot] + '</span><img src="assets/logo.webp" alt=""></div></header><div class="wrap">' +
     '<div class="steps" aria-hidden="true">' + stages.map(function (s, i) { return '<i class="' + (i <= idx ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
     '<h1 class="pTitle">' + esc(c.title) + '</h1><div class="pSub"><span class="pill" style="color:' + g.color + '">' + g.name + '</span><span class="pill">' + CORE.SKILLS[c.s].name + '</span><span class="pill">' + CORE.GAME[c.game] + '</span>' +
-    (CORE.QUICK[c.game] ? '<span class="pill" style="color:#8A5A00">30~60초</span>' : '') + '</div>';
+    (CORE.QUICK[c.game] ? '<span class="pill" style="color:#8A5A00">30~60초</span>' : '') + (c.w > S.week ? '<span class="pill" style="color:#5B2BC0">미리 하기</span>' : '') + '</div>';
   if (P.stage === 'scene') h += drawScene();
   else if (P.stage === 'quiz') h += drawQuiz();
   else if (P.stage === 'fb') h += drawFeedback();
