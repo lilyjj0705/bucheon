@@ -1051,7 +1051,7 @@ if (typeof module !== 'undefined') module.exports = AI_DATA;
 (function () {
 'use strict';
 var CFG = window.TALK100_CONFIG || {}, DEMO = window.TALK100_DEMO || null;
-var TK = 'talk100_token', QK = 'talk100_queue', NEED_VERSION = '3.8';
+var TK = 'talk100_token', QK = 'talk100_queue', NEED_VERSION = '3.9';
 var S = { mode: null, token: null, user: null, week: 0, totalWeeks: 20, startDate: '', cases: [], sources: {}, st: CORE.emptyState(), recs: [], next: null, tab: 'home', filter: 0, openWeek: null, toolQ: '', toolCat: '' };
 var P = null; // 플레이어 상태
 var $app = document.getElementById('app'), $layer = document.getElementById('layer');
@@ -1164,6 +1164,8 @@ function adopt(res) {
   if (res.consent) S.consent = res.consent;
   if ('diag' in res) S.diag = res.diag;
   if ('survey' in res) S.survey = res.survey;
+  if ('check' in res) S.check = res.check;
+  if ('fbq' in res) S.fbq = res.fbq;
   if (res.diffMap) S.diffMap = res.diffMap;
   if ('seedPre' in res) S.seedPre = res.seedPre;
 }
@@ -1267,10 +1269,10 @@ function renderLogin(msg, demoForm) {
 function consentBody(c) {
   var ret = (c && c.retention) || '2026학년도 연수 종료 시까지 보유하며, 종료 후 지체 없이 파기합니다.';
   return '<div class="fbBlock"><h3>1. 수집·이용 목적</h3><p>학교폭력 전담조사관 역량강화 연수 운영, 개인별 학습 누가기록 관리, 맞춤 CASE 추천</p></div>' +
-    '<div class="fbBlock"><h3>2. 수집 항목 (필수)</h3><ul><li>성명 (운영 담당자가 명단에 등록)</li><li>학습 기록: 완료한 CASE와 결과 단계, 다시보기, TOOL 확인, 체감 난이도, 관심영역, 배지, AI 면담 연습 장면별 완료 여부와 결과 단계, 학습 일시</li><li>접속 기록: 접속 일시, 로그인 성공 여부</li></ul>' +
+    '<div class="fbBlock"><h3>2. 수집 항목 (필수)</h3><ul><li>성명 (운영 담당자가 명단에 등록)</li><li>학습 기록: 완료한 CASE와 결과 단계, 다시보기, TOOL 확인, 체감 난이도, 관심영역, 배지, AI 면담 연습 장면별 완료 여부와 결과 단계, 시작·1주차 점검 결과, 학습 일시</li><li>접속 기록: 접속 일시, 로그인 성공 여부</li></ul>' +
     '<p class="muted" style="font-size:13.5px;margin-top:8px">연락처, 소속, 기기 정보, 위치, 사진은 수집하지 않습니다. 개인 코드는 원래 숫자를 알 수 없는 암호화(해시) 값으로만 저장합니다. AI 면담 롤플레이와 AI톡 코치에 입력한 문장은 저장하지 않으며 기기 밖으로 보내지 않습니다.</p></div>' +
     '<div class="fbBlock"><h3>3. 보유·이용 기간</h3><p>' + esc(ret) + '</p></div>' +
-    '<div class="fbBlock"><h3>4. 처리 방법</h3><p>운영 담당자가 관리하는 구글 시트에 저장하며, 제3자에게 제공하지 않습니다. AI톡 맞춤추천의 패턴 분석은 다른 조사관이 누구인지 드러나지 않는 방식으로 학습 흐름을 비교합니다. 운영현황은 개인 순위 없이 전체 통계로만 작성합니다. 시작·종료 익명 설문(선택)의 응답은 이름·계정과 연결하지 않고 저장하며, 계정에는 참여 여부만 표시합니다.</p></div>' +
+    '<div class="fbBlock"><h3>4. 처리 방법</h3><p>운영 담당자가 관리하는 구글 시트에 저장하며, 제3자에게 제공하지 않습니다. AI톡 맞춤추천의 패턴 분석은 다른 조사관이 누구인지 드러나지 않는 방식으로 학습 흐름을 비교합니다. 운영현황은 개인 순위 없이 전체 통계로만 작성합니다. 1주차·10주차 만족도와 종료 설문(선택)의 응답은 이름·계정과 연결하지 않고 저장하며, 계정에는 참여 여부만 표시합니다.</p></div>' +
     '<div class="fbBlock"><h3>5. 동의를 거부할 권리</h3><p>동의를 거부할 수 있습니다. 다만 동의하지 않으면 이 앱을 이용할 수 없습니다.</p></div>';
 }
 /* ---------- [선택] 연구·차기 연수 활용 동의 ---------- */
@@ -1284,7 +1286,11 @@ function researchBody(r) {
     '<li>동의하면 시작 전에 배경 문항 5개와 사전 역량 진단(자기평가 16문항, 상황 판단 16문항)을 하고, CASE 80개를 마치면 사후 진단이 열립니다.</li></ul>' +
     '<p class="muted" style="font-size:13.5px;margin-top:8px">동의하지 않아도 앱의 모든 학습 기능을 이용할 수 있습니다. 동의 여부는 운영현황·누가기록에 표시하지 않으며, 연수 평가·위촉과 무관합니다. MY 화면에서 언제든 철회할 수 있습니다.</p></div>';
 }
-function route() { if (S.mode === 'live' && S.diag && S.diag.need === 'pre') renderDiag(); else render(); }
+function route() {
+  if (S.mode === 'live' && S.diag && S.diag.need === 'pre') renderDiag();
+  else if (S.mode === 'live' && S.check && S.check.need === 'pre') renderCheck();
+  else render();
+}
 function refreshSession() {
   return post({ action: 'session', token: S.token }).then(function (res) { if (handleErr(res)) return; if (res.ok && !res.needConsent) { adopt(res); route(); } });
 }
@@ -1339,7 +1345,7 @@ function renderDiag() {
     post({ action: 'event', token: S.token, ev: ev }).then(function (res) {
       if (handleErr(res)) return;
       if (!res.ok) { btn.disabled = false; btn.textContent = '제출하기'; toast('저장하지 못했어요. 다시 눌러 주세요.'); return; }
-      D = null; adopt(res); S.tab = isPost ? 'my' : 'home'; window.scrollTo(0, 0); render();
+      D = null; adopt(res); S.tab = isPost ? 'my' : 'home'; window.scrollTo(0, 0); route();
       toast(isPost ? '사후 진단을 마쳤어요. MY에서 변화를 확인해 보세요.' : '사전 진단을 마쳤어요. 이제 학습을 시작해요.');
     }).catch(function () { btn.disabled = false; btn.textContent = '제출하기'; toast('서버에 연결하지 못했어요.'); });
   };
@@ -1445,6 +1451,99 @@ function renderSurvey() {
   };
 }
 
+/* ---------- 시작 점검 · 1주차 점검 · 10주차 피드백 ---------- */
+var CK = null, FBS = null;
+function fbItemsHtml(items, arr, key) {
+  return items.map(function (it, i) {
+    var body;
+    if (it.t === 'rate') body = '<div class="lik">' + [1, 2, 3, 4, 5].map(function (v) { return '<button data-' + key + '="' + i + '" data-v="' + v + '" aria-pressed="' + (arr[i] === v) + '">' + v + '</button>'; }).join('') + '</div>';
+    else if (it.t === 'one') body = '<div class="seg">' + it.o.map(function (o, k) { return '<button data-' + key + '="' + i + '" data-v="' + k + '" aria-pressed="' + (arr[i] === k) + '">' + esc(o) + '</button>'; }).join('') + '</div>';
+    else body = '<div class="seg">' + it.o.map(function (o, k) { return '<button data-' + key + 'm="' + i + '" data-v="' + k + '" aria-pressed="' + ((arr[i] || []).indexOf(k) >= 0) + '">' + esc(o) + '</button>'; }).join('') + '</div>';
+    return '<div class="likRow"><p>' + esc(it.q) + (it.t === 'rate' ? ' <span class="tiny">(1 전혀 아니다 · 5 매우 그렇다)</span>' : '') + '</p>' + body + '</div>';
+  }).join('');
+}
+function fbCount(items, arr) { return items.filter(function (it, i) { return it.t === 'multi' ? (arr[i] && arr[i].length) : arr[i] != null; }).length; }
+function bindFb(key, arr, redraw) {
+  $app.querySelectorAll('[data-' + key + ']').forEach(function (b) { b.onclick = function () { arr[+b.getAttribute('data-' + key)] = +b.dataset.v; redraw(); }; });
+  $app.querySelectorAll('[data-' + key + 'm]').forEach(function (b) { b.onclick = function () { var i = +b.getAttribute('data-' + key + 'm'), v = +b.dataset.v, a = arr[i] || []; var j = a.indexOf(v); if (j >= 0) a.splice(j, 1); else a.push(v); arr[i] = a.sort(); redraw(); }; });
+}
+function renderCheck() {
+  var g = S.check; if (!g) return render();
+  closeLayer();
+  var pre = g.need === 'pre';
+  if (!CK || CK.phase !== g.need) CK = { phase: g.need, self: [], focus: [], perf: [], fb: [], ord: g.perf.map(function (x, i) { return shuffled(4, 211 + i * 19); }) };
+  var sc = function (arr, i, key) { return '<div class="lik">' + [1, 2, 3, 4, 5].map(function (v) { return '<button data-' + key + '="' + i + '" data-v="' + v + '" aria-pressed="' + (arr[i] === v) + '">' + v + '</button>'; }).join('') + '</div>'; };
+  var need = (pre ? 4 : 0) + g.focus.length + g.perf.length + (g.fb ? g.fb.length : 0);
+  var cnt = CK.self.filter(Boolean).length + CK.focus.filter(Boolean).length + CK.perf.filter(function (x) { return x != null; }).length + (g.fb ? fbCount(g.fb, CK.fb) : 0);
+  var h = '<main class="wrap" style="padding:22px 18px 30px"><img src="assets/logo.webp" alt="톡!100" class="logo" style="width:92px;display:block;margin:0 auto">' +
+    '<h1 style="font-size:21px;text-align:center;margin-top:8px">' + (pre ? '시작 점검' : '1주차 점검과 만족도') + '</h1>' +
+    '<p class="muted" style="text-align:center;font-size:14px;margin-top:6px;line-height:1.55">' + (pre ? '학습을 시작하기 전, 지금의 나를 1~2분만 점검해요. 1주차를 마치면 같은 영역을 다시 점검해 변화를 보여 드려요.' : '1주차 중점 영역(민원이 많은 부분)을 다시 점검하고, 1주차 학습에 대한 의견을 들려주세요.') + '</p>' +
+    '<p class="tiny" style="text-align:center;margin-top:6px">점검 결과는 연수 평가와 무관하며, 나의 성장 확인에만 쓰여요.</p>';
+  if (pre) h += '<div class="fbBlock"><h3>1. 역량군별로, 나는 기준에 맞게 조사할 수 있다</h3><p class="tiny">1 전혀 그렇지 않다 · 5 매우 그렇다</p>' + g.self.map(function (t, i) { return '<div class="likRow"><p><b>' + esc(t) + '</b></p>' + sc(CK.self, i, 'cs') + '</div>'; }).join('') + '</div>';
+  h += '<div class="fbBlock"><h3>' + (pre ? '2' : '1') + '. 1주차 중점 영역 자기평가</h3>' + g.focus.map(function (t, i) { return '<div class="likRow"><p>' + esc(t) + '</p>' + sc(CK.focus, i, 'cf') + '</div>'; }).join('') + '</div>';
+  h += '<div class="fbBlock"><h3>' + (pre ? '3' : '2') + '. 상황 판단</h3>' + g.perf.map(function (x, i) {
+    return '<div class="likRow"><p><b class="num">' + (i + 1) + '.</b> ' + esc(x.q) + '</p>' + CK.ord[i].map(function (k) { return '<button class="opt" style="margin-top:6px;font-size:14.5px;padding:11px 14px" data-cp="' + i + '" data-k="' + k + '" aria-pressed="' + (CK.perf[i] === k) + '">' + esc(x.o[k]) + '</button>'; }).join('') + '</div>';
+  }).join('') + '</div>';
+  if (g.fb) h += '<div class="fbBlock"><h3>3. 1주차 만족도·피드백 (익명)</h3><p class="tiny">이 부분은 이름·계정과 연결하지 않고 저장해요.</p>' + fbItemsHtml(g.fb, CK.fb, 'cb') + '</div>';
+  h += '<div class="submit"><button class="btn" id="ckGo"' + (cnt === need ? '' : ' disabled') + '>제출하기 <span class="num" style="opacity:.8">(' + cnt + '/' + need + ')</span></button>' +
+    (pre ? '' : '<button class="btn ghost" id="ckLater" style="height:46px">나중에 하기</button>') + '</div></main>';
+  var y = window.scrollY; $app.innerHTML = h; window.scrollTo(0, y);
+  [['cs', CK.self], ['cf', CK.focus]].forEach(function (x) { $app.querySelectorAll('[data-' + x[0] + ']').forEach(function (b) { b.onclick = function () { x[1][+b.getAttribute('data-' + x[0])] = +b.dataset.v; renderCheck(); }; }); });
+  $app.querySelectorAll('[data-cp]').forEach(function (b) { b.onclick = function () { CK.perf[+b.dataset.cp] = +b.dataset.k; renderCheck(); }; });
+  if (g.fb) bindFb('cb', CK.fb, renderCheck);
+  var lt = document.getElementById('ckLater'); if (lt) lt.onclick = function () { CK = null; S.tab = 'home'; render(); };
+  document.getElementById('ckGo').onclick = function () {
+    var btn = this; btn.disabled = true; btn.textContent = '저장 중…';
+    var ev = { type: 'check', phase: CK.phase, focus: CK.focus, perf: CK.perf }; if (pre) ev.self = CK.self; if (g.fb) ev.fb = CK.fb;
+    post({ action: 'event', token: S.token, ev: ev }).then(function (res) {
+      if (handleErr(res)) return;
+      if (!res.ok) { btn.disabled = false; btn.textContent = '제출하기'; toast('저장하지 못했어요. 다시 눌러 주세요.'); return; }
+      var wasPre = pre; CK = null; adopt(res); S.tab = wasPre ? 'home' : 'my'; window.scrollTo(0, 0); render();
+      toast(wasPre ? '시작 점검을 마쳤어요. 1주차를 시작해 볼까요?' : '1주차 점검을 마쳤어요. MY에서 변화를 확인해 보세요.');
+    }).catch(function () { btn.disabled = false; btn.textContent = '제출하기'; toast('서버에 연결하지 못했어요.'); });
+  };
+}
+function renderFb() {
+  var g = S.fbq; if (!g) return render();
+  closeLayer();
+  if (!FBS || FBS.round !== g.need) FBS = { round: g.need, a: [] };
+  var cnt = fbCount(g.items, FBS.a), need = g.items.length;
+  var h = '<main class="wrap" style="padding:22px 18px 30px"><h1 style="font-size:21px;text-align:center">10주차 피드백</h1>' +
+    '<p class="muted" style="text-align:center;font-size:14px;margin-top:6px;line-height:1.55">절반을 지났어요. 남은 10주를 더 좋게 만들 수 있도록 의견을 들려주세요. 이름·계정과 연결하지 않고 저장해요.</p>' +
+    '<div class="fbBlock">' + fbItemsHtml(g.items, FBS.a, 'fq') + '</div>' +
+    '<div class="submit"><button class="btn" id="fqGo"' + (cnt === need ? '' : ' disabled') + '>제출하기 <span class="num" style="opacity:.8">(' + cnt + '/' + need + ')</span></button><button class="btn ghost" id="fqLater" style="height:46px">나중에 하기</button></div></main>';
+  var y = window.scrollY; $app.innerHTML = h; window.scrollTo(0, y);
+  bindFb('fq', FBS.a, renderFb);
+  document.getElementById('fqLater').onclick = function () { FBS = null; S.tab = 'home'; render(); };
+  document.getElementById('fqGo').onclick = function () {
+    var btn = this; btn.disabled = true; btn.textContent = '저장 중…';
+    post({ action: 'event', token: S.token, ev: { type: 'fb', round: FBS.round, fb: FBS.a } }).then(function (res) {
+      if (handleErr(res)) return;
+      if (!res.ok) { btn.disabled = false; btn.textContent = '제출하기'; toast('저장하지 못했어요.'); return; }
+      FBS = null; adopt(res); S.tab = 'home'; window.scrollTo(0, 0); render(); toast('의견 감사합니다. 남은 10주에 반영할게요.');
+    }).catch(function () { btn.disabled = false; btn.textContent = '제출하기'; toast('서버에 연결하지 못했어요.'); });
+  };
+}
+function pendingCards() {
+  var h = '';
+  if (S.mode !== 'live') return h;
+  if (S.check && S.check.need === 'post1') h += '<section class="sec"><button class="rec" id="ckOpen" style="display:block!important;border-color:#BDEBD9;background:#F2FBF7"><span class="meta"><span class="tag review">1주차 점검</span>약 2분</span><b>1주차 점검과 만족도</b><p>시작 때와 비교해 민원이 많은 영역에서 얼마나 달라졌는지 확인하고, 1주차 의견을 들려주세요.</p></button></section>';
+  if (S.fbq && S.fbq.need === 'w10') h += '<section class="sec"><button class="rec" id="fqOpen" style="display:block!important;border-color:#D8CCFA;background:#FAF7FF"><span class="meta"><span class="tag pattern">10주차 피드백</span>약 2분 · 익명</span><b>절반을 지났어요, 의견을 들려주세요</b><p>메뉴별 도움 정도, 분량·난이도, 더 다뤘으면 하는 주제를 알려 주시면 남은 10주에 반영해요.</p></button></section>';
+  return h;
+}
+function checkCard() {
+  var ck = S.st.check || {}; if (!ck.pre) return '';
+  var pre = ck.pre, po = ck.post1, focus = (S.check && S.check.focus) || ['판단요소 객관 기재', '관계회복 강요 없이 안내', '압박·낙인·훈계·예견 없이 면담'];
+  var short = ['판단요소 객관 기재', '관계회복 강요 없이 안내', '압박·낙인·예견 없이 면담'];
+  return '<section class="sec"><div class="secHead"><h2>나의 점검</h2></div><div class="card">' +
+    '<p style="font-size:15px;font-weight:800">1주차 중점 상황 판단 ' + pre.score + '/6' + (po ? ' → <span style="color:var(--near)">' + po.score + '/6</span>' : '') + '</p>' +
+    '<p class="tiny" style="margin-top:2px">' + (po ? '시작 점검과 1주차 점검을 비교했어요.' : '1주차 5개를 마치면 같은 영역을 다시 점검해요.') + '</p>' +
+    '<div class="gbars" style="margin-top:12px">' + short.map(function (t, i) {
+      var a = pre.focus[i], b = po ? po.focus[i] : null;
+      return '<div class="gbar" style="grid-template-columns:132px 1fr 56px"><span style="font-size:12.5px">' + t + '</span><span class="bar" style="position:relative"><i style="width:' + a * 20 + '%;background:#B9C3D8"></i>' + (po ? '<i style="position:absolute;left:0;top:0;height:100%;width:' + b * 20 + '%;background:var(--near);opacity:.85"></i>' : '') + '</span><span class="tiny num">' + a + (po ? '→' + b : '') + '/5</span></div>';
+    }).join('') + '</div></div></section>';
+}
+
 function startDemo(name) {
   if (!DEMO) { toast('시연 자료가 없어요.'); return; }
   S.mode = 'demo'; S.user = { name: name }; S.cases = DEMO.cases; S.sources = DEMO.sources; S.week = 1; S.totalWeeks = 20; S.startDate = '';
@@ -1461,7 +1560,7 @@ function render() {
     (title ? '<header class="topbar"><div class="wrap"><img src="assets/logo.webp" alt="톡!100"><b>' + title + '</b></div></header>' : '') +
     '<main class="wrap">' + body + '<div style="height:28px"></div></main>' +
     '<nav class="nav" aria-label="주 메뉴"><div class="wrap">' + TABS.map(function (t) {
-      var dotOn = (t[0] === 'home' && S.tab !== 'home' && (S.survey || (S.diag && S.diag.need === 'post'))) || (t[0] === 'my' && S.tab !== 'my' && Object.keys(S.st.badges).some(function (k) { return Date.now() - S.st.badges[k] < 86400000; }));
+      var dotOn = (t[0] === 'home' && S.tab !== 'home' && (S.survey || S.fbq || (S.check && S.check.need === 'post1') || (S.diag && S.diag.need === 'post'))) || (t[0] === 'my' && S.tab !== 'my' && Object.keys(S.st.badges).some(function (k) { return Date.now() - S.st.badges[k] < 86400000; }));
       return '<button data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : '') + ' style="position:relative">' + ICON[t[2]] + t[1] + (dotOn ? '<span class="navDot" aria-label="새 알림"></span>' : '') + '</button>';
     }).join('') + '</div></nav>';
   $app.innerHTML = h;
@@ -1505,6 +1604,8 @@ function bind() {
   $app.querySelectorAll('[data-rp]').forEach(function (b) { b.onclick = function () { openRp(b.dataset.rp); }; });
   var co = document.getElementById('coachOpen'); if (co) co.onclick = function () { openCoach(null); };
   var svo = document.getElementById('svOpen'); if (svo) svo.onclick = function () { SV = null; renderSurvey(); };
+  var cko = document.getElementById('ckOpen'); if (cko) cko.onclick = function () { CK = null; renderCheck(); };
+  var fqo = document.getElementById('fqOpen'); if (fqo) fqo.onclick = function () { FBS = null; renderFb(); };
   ['dgHome', 'dgPost'].forEach(function (id) { var b = document.getElementById(id); if (b) b.onclick = function () { D = null; renderDiag(); }; });
   var lo = document.getElementById('logout');
   if (lo) lo.onclick = function () { try { localStorage.removeItem(TK); } catch (e) {} S.mode = null; S.token = null; renderLogin(); };
@@ -1861,7 +1962,7 @@ function viewHome() {
     (S.week < 1 && openDate(1) ? '<p class="muted" style="font-size:13.5px;margin:-4px 0 10px">1주차는 ' + esc(openDate(1)) + '에 시작해요. 지금 미리 학습할 수 있어요.</p>' : '') +
     '<div class="list">' + wk.map(function (c) { return caseRow(c); }).join('') + '</div>' +
     (S.mode === 'live' && cw < S.totalWeeks && done === 5 ? '<button class="btn ghost" data-tab="all" style="height:46px;margin-top:10px">다음 주차 미리 하기</button>' : '') + '</section>';
-  h += surveyCard();
+  h += pendingCards() + surveyCard();
   if (S.diag && S.diag.need === 'post') h += '<section class="sec"><button class="rec" id="dgHome" style="display:block!important;border-color:#BDEBD9;background:#F2FBF7"><b style="margin-top:0">사후 역량 진단이 열렸어요</b><p>CASE 80개를 마치셨어요. 처음과 비교해 보는 마지막 진단입니다.</p></button></section>';
   var nrp = RPS.filter(function (x) { return !(S.st.rp || {})[x.id]; })[0] || RPS[0];
   h += '<section class="sec"><div class="aiRow"><button class="aiBtn calm" data-rp="' + nrp.id + '"><span class="aiMark" style="background:#1E6BFF">AI</span><b>면담 롤플레이</b><small>' + esc(nrp.title) + '<br>직접 묻고 AI 분석 받기</small></button>' +
@@ -1980,7 +2081,7 @@ function viewMy() {
     (S.st.interest.length ? S.st.interest.map(function (k) { return CORE.SKILLS[k].name; }).join(', ') : '아직 고르지 않았어요.') + '</p>' +
     '<button class="btn ghost" data-tab="fit" style="height:46px;margin-top:12px">맞춤훈련에서 고르기</button></div></section>';
   if (S.mode === 'live') {
-    h += diagCard();
+    h += checkCard() + diagCard();
     var ron = !!(S.st.research && S.st.research.on);
     if (S.consent && S.consent.research) h += '<section class="sec"><div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><b style="font-size:15px">[선택] 연구·차기 연수 활용</b><p class="tiny" style="margin-top:3px;line-height:1.5">가명 처리된 학습 기록만 활용해요. 바꿔도 앱 이용은 똑같아요.</p></div>' +
       '<button class="switch" id="resToggle" role="switch" aria-checked="' + ron + '" aria-label="연구·차기 연수 활용 동의"><i></i></button></div></section>';
