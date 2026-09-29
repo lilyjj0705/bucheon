@@ -1051,7 +1051,7 @@ if (typeof module !== 'undefined') module.exports = AI_DATA;
 (function () {
 'use strict';
 var CFG = window.TALK100_CONFIG || {}, DEMO = window.TALK100_DEMO || null;
-var TK = 'talk100_token', QK = 'talk100_queue', NEED_VERSION = '3.9';
+var TK = 'talk100_token', QK = 'talk100_queue', NEED_VERSION = '4.1';
 var S = { mode: null, token: null, user: null, week: 0, totalWeeks: 20, startDate: '', cases: [], sources: {}, st: CORE.emptyState(), recs: [], next: null, tab: 'home', filter: 0, openWeek: null, toolQ: '', toolCat: '' };
 var P = null; // 플레이어 상태
 var $app = document.getElementById('app'), $layer = document.getElementById('layer');
@@ -1166,6 +1166,7 @@ function adopt(res) {
   if ('survey' in res) S.survey = res.survey;
   if ('check' in res) S.check = res.check;
   if ('fbq' in res) S.fbq = res.fbq;
+  if ('pilot' in res) S.pilot = res.pilot;
   if (res.diffMap) S.diffMap = res.diffMap;
   if ('seedPre' in res) S.seedPre = res.seedPre;
 }
@@ -1272,7 +1273,7 @@ function consentBody(c) {
     '<div class="fbBlock"><h3>2. 수집 항목 (필수)</h3><ul><li>성명 (운영 담당자가 명단에 등록)</li><li>학습 기록: 완료한 CASE와 결과 단계, 다시보기, TOOL 확인, 체감 난이도, 관심영역, 배지, AI 면담 연습 장면별 완료 여부와 결과 단계, 시작·1주차 점검 결과, 학습 일시</li><li>접속 기록: 접속 일시, 로그인 성공 여부</li></ul>' +
     '<p class="muted" style="font-size:13.5px;margin-top:8px">연락처, 소속, 기기 정보, 위치, 사진은 수집하지 않습니다. 개인 코드는 원래 숫자를 알 수 없는 암호화(해시) 값으로만 저장합니다. AI 면담 롤플레이와 AI톡 코치에 입력한 문장은 저장하지 않으며 기기 밖으로 보내지 않습니다.</p></div>' +
     '<div class="fbBlock"><h3>3. 보유·이용 기간</h3><p>' + esc(ret) + '</p></div>' +
-    '<div class="fbBlock"><h3>4. 처리 방법</h3><p>운영 담당자가 관리하는 구글 시트에 저장하며, 제3자에게 제공하지 않습니다. AI톡 맞춤추천의 패턴 분석은 다른 조사관이 누구인지 드러나지 않는 방식으로 학습 흐름을 비교합니다. 운영현황은 개인 순위 없이 전체 통계로만 작성합니다. 1주차·10주차 만족도와 종료 설문(선택)의 응답은 이름·계정과 연결하지 않고 저장하며, 계정에는 참여 여부만 표시합니다.</p></div>' +
+    '<div class="fbBlock"><h3>4. 처리 방법</h3><p>운영 담당자가 관리하는 구글 시트에 저장하며, 제3자에게 제공하지 않습니다. AI톡 맞춤추천의 패턴 분석은 다른 조사관이 누구인지 드러나지 않는 방식으로 학습 흐름을 비교합니다. 운영현황은 개인 순위 없이 전체 통계로만 작성합니다. 만족도 조사·설문(선택, 주관식 포함)의 응답은 이름·계정과 연결하지 않고 여러 명분을 모아 순서를 섞어 저장하며, 계정에는 참여 여부만 표시합니다.</p></div>' +
     '<div class="fbBlock"><h3>5. 동의를 거부할 권리</h3><p>동의를 거부할 수 있습니다. 다만 동의하지 않으면 이 앱을 이용할 수 없습니다.</p></div>';
 }
 /* ---------- [선택] 연구·차기 연수 활용 동의 ---------- */
@@ -1476,15 +1477,15 @@ function renderCheck() {
   var need = (pre ? 4 : 0) + g.focus.length + g.perf.length + (g.fb ? g.fb.length : 0);
   var cnt = CK.self.filter(Boolean).length + CK.focus.filter(Boolean).length + CK.perf.filter(function (x) { return x != null; }).length + (g.fb ? fbCount(g.fb, CK.fb) : 0);
   var h = '<main class="wrap" style="padding:22px 18px 30px"><img src="assets/logo.webp" alt="톡!100" class="logo" style="width:92px;display:block;margin:0 auto">' +
-    '<h1 style="font-size:21px;text-align:center;margin-top:8px">' + (pre ? '시작 점검' : '1주차 점검과 만족도') + '</h1>' +
-    '<p class="muted" style="text-align:center;font-size:14px;margin-top:6px;line-height:1.55">' + (pre ? '학습을 시작하기 전, 지금의 나를 1~2분만 점검해요. 1주차를 마치면 같은 영역을 다시 점검해 변화를 보여 드려요.' : '1주차 중점 영역(민원이 많은 부분)을 다시 점검하고, 1주차 학습에 대한 의견을 들려주세요.') + '</p>' +
+    '<h1 style="font-size:21px;text-align:center;margin-top:8px">' + (pre ? '시작 점검' : (g.pilot ? '성과 측정' : '1주차 점검과 만족도')) + '</h1>' +
+    '<p class="muted" style="text-align:center;font-size:14px;margin-top:6px;line-height:1.55">' + (pre ? (g.pilot ? '학습을 시작하기 전, 지금의 나를 1~2분만 점검해요. CASE ' + ((S.pilot && S.pilot.min) || 5) + '개를 마치면 같은 문항으로 다시 점검해 변화를 보여 드려요.' : '학습을 시작하기 전, 지금의 나를 1~2분만 점검해요. 1주차를 마치면 같은 영역을 다시 점검해 변화를 보여 드려요.') : (g.pilot ? 'CASE ' + ((S.pilot && S.pilot.min) || 5) + '개를 마치셨어요. 시작 점검과 같은 문항으로 달라진 점을 확인해요(약 1분). 결과는 MY의 ‘나의 점검’에서 볼 수 있어요.' : '1주차 중점 영역(민원이 많은 부분)을 다시 점검하고, 1주차 학습에 대한 의견을 들려주세요.')) + '</p>' +
     '<p class="tiny" style="text-align:center;margin-top:6px">점검 결과는 연수 평가와 무관하며, 나의 성장 확인에만 쓰여요.</p>';
   if (pre) h += '<div class="fbBlock"><h3>1. 평소 나의 조사 모습에 가까운 정도를 골라 주세요</h3><p class="tiny">1 전혀 그렇지 않다 · 3 보통이다 · 5 매우 그렇다</p>' + g.self.map(function (x, i) { return '<div class="likRow"><p><span class="pill" style="font-size:11px;padding:2px 8px;margin-right:6px">' + esc(x.g) + '</span>' + esc(x.t) + '</p>' + sc(CK.self, i, 'cs') + '</div>'; }).join('') + '</div>';
-  h += '<div class="fbBlock"><h3>' + (pre ? '2' : '1') + '. 1주차 중점 영역(민원이 많은 부분)</h3><p class="tiny">1 전혀 그렇지 않다 · 3 보통이다 · 5 매우 그렇다</p>' + g.focus.map(function (t, i) { return '<div class="likRow"><p>' + esc(t) + '</p>' + sc(CK.focus, i, 'cf') + '</div>'; }).join('') + '</div>';
-  h += '<div class="fbBlock"><h3>' + (pre ? '3' : '2') + '. 상황 판단</h3>' + g.perf.map(function (x, i) {
+  h += '<div class="fbBlock"><h3>' + (pre ? '2' : '1') + '. ' + '1주차 중점 영역(민원이 많은 부분)</h3><p class="tiny">1 전혀 그렇지 않다 · 3 보통이다 · 5 매우 그렇다</p>' + g.focus.map(function (t, i) { return '<div class="likRow"><p>' + esc(t) + '</p>' + sc(CK.focus, i, 'cf') + '</div>'; }).join('') + '</div>';
+  h += '<div class="fbBlock"><h3>' + (pre ? '3' : '2') + '. ' + '상황 판단</h3>' + g.perf.map(function (x, i) {
     return '<div class="likRow"><p><b class="num">' + (i + 1) + '.</b> ' + esc(x.q) + '</p>' + CK.ord[i].map(function (k) { return '<button class="opt" style="margin-top:6px;font-size:14.5px;padding:11px 14px" data-cp="' + i + '" data-k="' + k + '" aria-pressed="' + (CK.perf[i] === k) + '">' + esc(x.o[k]) + '</button>'; }).join('') + '</div>';
   }).join('') + '</div>';
-  if (g.fb) h += '<div class="fbBlock"><h3>3. 1주차 만족도·피드백 (익명)</h3><p class="tiny">이 부분은 이름·계정과 연결하지 않고 저장해요.</p>' + fbItemsHtml(g.fb, CK.fb, 'cb') + '</div>';
+  if (g.fb && !g.pilot) h += '<div class="fbBlock"><h3>3. 1주차 만족도·피드백 (익명)</h3><p class="tiny">이 부분은 이름·계정과 연결하지 않고 저장해요.</p>' + fbItemsHtml(g.fb, CK.fb, 'cb') + '</div>';
   h += '<div class="submit"><button class="btn" id="ckGo"' + (cnt === need ? '' : ' disabled') + '>제출하기 <span class="num" style="opacity:.8">(' + cnt + '/' + need + ')</span></button>' +
     (pre ? '' : '<button class="btn ghost" id="ckLater" style="height:46px">나중에 하기</button>') + '</div></main>';
   var y = window.scrollY; $app.innerHTML = h; window.scrollTo(0, y);
@@ -1499,35 +1500,52 @@ function renderCheck() {
       if (handleErr(res)) return;
       if (!res.ok) { btn.disabled = false; btn.textContent = '제출하기'; toast('저장하지 못했어요. 다시 눌러 주세요.'); return; }
       var wasPre = pre; CK = null; adopt(res); S.tab = wasPre ? 'home' : 'my'; window.scrollTo(0, 0); render();
-      toast(wasPre ? '시작 점검을 마쳤어요. 1주차를 시작해 볼까요?' : '1주차 점검을 마쳤어요. MY에서 변화를 확인해 보세요.');
+      if (!wasPre && S.fbq && S.fbq.need === 'pilot') { FBS = null; renderFb(); toast('성과 측정을 마쳤어요. 이어서 익명 만족도 조사예요.'); return; }
+      toast(wasPre ? '시작 점검을 마쳤어요. 1주차를 시작해 볼까요?' : '점검을 마쳤어요. MY에서 변화를 확인해 보세요.');
     }).catch(function () { btn.disabled = false; btn.textContent = '제출하기'; toast('서버에 연결하지 못했어요.'); });
   };
 }
 function renderFb() {
   var g = S.fbq; if (!g) return render();
   closeLayer();
-  if (!FBS || FBS.round !== g.need) FBS = { round: g.need, a: [] };
-  var cnt = fbCount(g.items, FBS.a), need = g.items.length;
-  var h = '<main class="wrap" style="padding:22px 18px 30px"><h1 style="font-size:21px;text-align:center">10주차 피드백</h1>' +
-    '<p class="muted" style="text-align:center;font-size:14px;margin-top:6px;line-height:1.55">절반을 지났어요. 남은 10주를 더 좋게 만들 수 있도록 의견을 들려주세요. 이름·계정과 연결하지 않고 저장해요.</p>' +
+  if (!FBS || FBS.round !== g.need) FBS = { round: g.need, a: [], txt: ['', ''] };
+  var cnt = fbCount(g.items, FBS.a), need = g.items.length, pil = g.need === 'pilot';
+  var h = '<main class="wrap" style="padding:22px 18px 30px"><h1 style="font-size:21px;text-align:center">' + (pil ? '🔒 익명 만족도 조사' : '10주차 피드백') + '</h1>' +
+    (pil ? '<div class="fbBlock" style="background:#F2FBF7;border-color:#BDEBD9"><h3 style="color:#0E7A5F">누가 답했는지 알 수 없어요</h3><ul style="margin-top:4px">' +
+      '<li>응답은 이름·계정과 연결되지 않아요. 계정에는 ‘응답함’ 표시만 남아요.</li>' +
+      '<li>응답은 바로 저장하지 않고, 5명분이 모이면 순서를 섞어 한꺼번에 저장해요.</li>' +
+      '<li>결과는 5명 이상일 때만 전체 통계로 봐요. 운영자도 개인의 응답을 알 수 없어요.</li></ul>' +
+      '<p class="tiny" style="margin-top:6px">솔직한 의견이 확대 배포 여부를 정하는 데 가장 큰 도움이 돼요.</p></div>'
+      : '<p class="muted" style="text-align:center;font-size:14px;margin-top:6px;line-height:1.55">절반을 지났어요. 남은 10주를 더 좋게 만들 수 있도록 의견을 들려주세요. 이름·계정과 연결하지 않고 저장해요.</p>') +
     '<div class="fbBlock">' + fbItemsHtml(g.items, FBS.a, 'fq') + '</div>' +
+    (pil && g.text ? '<div class="fbBlock"><h3>자유롭게 적어 주세요 (선택)</h3><p class="tiny">실제 학생·사안 정보나 본인을 알 수 있는 내용은 쓰지 마세요. 전화번호·이메일 형식은 자동으로 가려져요.</p>' +
+      g.text.map(function (q, i) { return '<div class="likRow"><p>' + esc(q) + '</p><textarea data-ft="' + i + '" maxlength="300" rows="3" style="width:100%;font:inherit;font-size:16px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;resize:vertical">' + esc(FBS.txt[i] || '') + '</textarea><p class="tiny" style="text-align:right">최대 300자</p></div>'; }).join('') + '</div>' : '') +
     '<div class="submit"><button class="btn" id="fqGo"' + (cnt === need ? '' : ' disabled') + '>제출하기 <span class="num" style="opacity:.8">(' + cnt + '/' + need + ')</span></button><button class="btn ghost" id="fqLater" style="height:46px">나중에 하기</button></div></main>';
   var y = window.scrollY; $app.innerHTML = h; window.scrollTo(0, y);
   bindFb('fq', FBS.a, renderFb);
+  $app.querySelectorAll('[data-ft]').forEach(function (t) { t.addEventListener('input', function () { FBS.txt[+t.dataset.ft] = t.value; }); });
   document.getElementById('fqLater').onclick = function () { FBS = null; S.tab = 'home'; render(); };
   document.getElementById('fqGo').onclick = function () {
     var btn = this; btn.disabled = true; btn.textContent = '저장 중…';
-    post({ action: 'event', token: S.token, ev: { type: 'fb', round: FBS.round, fb: FBS.a } }).then(function (res) {
+    var evf = { type: 'fb', round: FBS.round, fb: FBS.a }; if (FBS.round === 'pilot') evf.text = FBS.txt;
+    post({ action: 'event', token: S.token, ev: evf }).then(function (res) {
       if (handleErr(res)) return;
       if (!res.ok) { btn.disabled = false; btn.textContent = '제출하기'; toast('저장하지 못했어요.'); return; }
-      FBS = null; adopt(res); S.tab = 'home'; window.scrollTo(0, 0); render(); toast('의견 감사합니다. 남은 10주에 반영할게요.');
+      var wasPilot = FBS.round === 'pilot'; FBS = null; adopt(res); S.tab = 'home'; window.scrollTo(0, 0); render(); toast(wasPilot ? '솔직한 의견 감사합니다. 확대 배포 판단에 소중히 쓸게요.' : '의견 감사합니다. 남은 10주에 반영할게요.');
     }).catch(function () { btn.disabled = false; btn.textContent = '제출하기'; toast('서버에 연결하지 못했어요.'); });
   };
 }
 function pendingCards() {
   var h = '';
   if (S.mode !== 'live') return h;
-  if (S.check && S.check.need === 'post1') h += '<section class="sec"><button class="rec" id="ckOpen" style="display:block!important;border-color:#BDEBD9;background:#F2FBF7"><span class="meta"><span class="tag review">1주차 점검</span>약 2분</span><b>1주차 점검과 만족도</b><p>시작 때와 비교해 민원이 많은 영역에서 얼마나 달라졌는지 확인하고, 1주차 의견을 들려주세요.</p></button></section>';
+  if (S.check && S.check.need === 'post1') h += S.check.pilot
+    ? '<section class="sec"><button class="rec" id="ckOpen" style="display:block!important;border-color:#BDEBD9;background:#F2FBF7"><span class="meta"><span class="tag review">시범 운영</span>약 1분</span><b>성과 측정</b><p>시작 점검과 같은 문항으로 달라진 점을 확인해요. 이어서 익명 만족도 조사가 열려요.</p></button></section>'
+    : '<section class="sec"><button class="rec" id="ckOpen" style="display:block!important;border-color:#BDEBD9;background:#F2FBF7"><span class="meta"><span class="tag review">1주차 점검</span>약 2분</span><b>1주차 점검과 만족도</b><p>시작 때와 비교해 민원이 많은 영역에서 얼마나 달라졌는지 확인하고, 1주차 의견을 들려주세요.</p></button></section>';
+  else if (S.pilot && !S.pilot.done && (S.st.check || {}).pre && !S.fbq) {
+    var gp = Math.max(0, Math.min(S.pilot.min, S.pilot.got));
+    h += '<section class="sec"><div class="card" style="padding:14px 16px"><p style="font-size:15px;font-weight:800">시범 운영 · CASE ' + S.pilot.min + '개를 마치면 성과 측정과 만족도 조사가 열려요</p><div class="bar" style="width:100%;margin-top:8px"><i style="width:' + Math.round(gp / S.pilot.min * 100) + '%"></i></div><p class="tiny" style="margin-top:6px">지금 ' + gp + '개 · ' + (S.pilot.min - gp) + '개 남았어요. 설문 전에 <b>AI 면담 롤플레이</b>도 한 번 해 보세요.</p></div></section>';
+  }
+  if (S.fbq && S.fbq.need === 'pilot') h += '<section class="sec"><button class="rec" id="fqOpen" style="display:block!important;border-color:#D8CCFA;background:#FAF7FF"><span class="meta"><span class="tag pattern">🔒 익명</span>약 1분</span><b>만족도 조사에 참여해 주세요</b><p>누가 답했는지 알 수 없도록 저장해요. 솔직한 의견과 주관식 의견을 들려주세요.</p></button></section>';
   if (S.fbq && S.fbq.need === 'w10') h += '<section class="sec"><button class="rec" id="fqOpen" style="display:block!important;border-color:#D8CCFA;background:#FAF7FF"><span class="meta"><span class="tag pattern">10주차 피드백</span>약 2분 · 익명</span><b>절반을 지났어요, 의견을 들려주세요</b><p>메뉴별 도움 정도, 분량·난이도, 더 다뤘으면 하는 주제를 알려 주시면 남은 10주에 반영해요.</p></button></section>';
   return h;
 }
@@ -1957,12 +1975,13 @@ function viewHome() {
     '<div><small style="color:#7A3FE0">100 TOOL</small><b class="num">' + s0.tools + '<span> /100</span></b></div></div>';
   var cont = nextCaseId(null);
   if (cont && byId(cont)) { var cc = byId(cont); h += '<section class="sec"><button class="resume" data-case="' + cc.id + '"><small>이어서 하기</small><b>' + esc(cc.title) + '</b><span>' + cc.w + '주차 ' + CORE.SLOT[cc.slot] + ' · ' + CORE.GAME[cc.game] + (CORE.QUICK[cc.game] ? ' · 30~60초' : '') + '</span><i aria-hidden="true">→</i></button></section>'; }
+  h += pendingCards();
   var cw = Math.max(1, S.week), wk = S.cases.filter(function (c) { return c.w === cw; }), done = wk.filter(function (c) { return S.st.done[c.id]; }).length;
   h += '<section class="sec"><div class="secHead"><h2>' + (S.week < 1 ? '1주차 미리 보기' : '이번 주 · ' + S.week + '주차') + '</h2><span class="tiny num">' + done + ' / 5 완료</span></div>' +
     (S.week < 1 && openDate(1) ? '<p class="muted" style="font-size:13.5px;margin:-4px 0 10px">1주차는 ' + esc(openDate(1)) + '에 시작해요. 지금 미리 학습할 수 있어요.</p>' : '') +
     '<div class="list">' + wk.map(function (c) { return caseRow(c); }).join('') + '</div>' +
     (S.mode === 'live' && cw < S.totalWeeks && done === 5 ? '<button class="btn ghost" data-tab="all" style="height:46px;margin-top:10px">다음 주차 미리 하기</button>' : '') + '</section>';
-  h += pendingCards() + surveyCard();
+  h += surveyCard();
   if (S.diag && S.diag.need === 'post') h += '<section class="sec"><button class="rec" id="dgHome" style="display:block!important;border-color:#BDEBD9;background:#F2FBF7"><b style="margin-top:0">사후 역량 진단이 열렸어요</b><p>CASE 80개를 마치셨어요. 처음과 비교해 보는 마지막 진단입니다.</p></button></section>';
   var nrp = RPS.filter(function (x) { return !(S.st.rp || {})[x.id]; })[0] || RPS[0];
   h += '<section class="sec"><div class="aiRow"><button class="aiBtn calm" data-rp="' + nrp.id + '"><span class="aiMark" style="background:#1E6BFF">AI</span><b>면담 롤플레이</b><small>' + esc(nrp.title) + '<br>직접 묻고 AI 분석 받기</small></button>' +
