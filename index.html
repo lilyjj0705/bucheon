@@ -1166,6 +1166,12 @@ function adopt(res) {
   if ('survey' in res) S.survey = res.survey;
   if ('check' in res) S.check = res.check;
   if ('fbq' in res) S.fbq = res.fbq;
+  /* [안전장치 2026-10] 서버에 예전 문항 파일이 남아 있어 문항 형식이 다를 때도 글씨가 비지 않게 보정 */
+  if (S.check && S.check.self) S.check.self = S.check.self.map(function (x, i) {
+    if (x && typeof x === 'object' && x.t) return x;
+    return CHECK_SELF_FIX[i] || { g: String(x || ''), t: String(x || '') };
+  });
+  if (S.fbq && !(S.fbq.items && S.fbq.items.length)) S.fbq = null;
   if ('pilot' in res) S.pilot = res.pilot;
   if (res.diffMap) S.diffMap = res.diffMap;
   if ('seedPre' in res) S.seedPre = res.seedPre;
@@ -1468,8 +1474,14 @@ function bindFb(key, arr, redraw) {
   $app.querySelectorAll('[data-' + key + ']').forEach(function (b) { b.onclick = function () { arr[+b.getAttribute('data-' + key)] = +b.dataset.v; redraw(); }; });
   $app.querySelectorAll('[data-' + key + 'm]').forEach(function (b) { b.onclick = function () { var i = +b.getAttribute('data-' + key + 'm'), v = +b.dataset.v, a = arr[i] || []; var j = a.indexOf(v); if (j >= 0) a.splice(j, 1); else a.push(v); arr[i] = a.sort(); redraw(); }; });
 }
+var CHECK_SELF_FIX = [
+  { g: '면담·소통', t: '나는 답을 암시하지 않는 질문으로 언제·어디서·무엇을 확인할 수 있다.' },
+  { g: '조사윤리', t: '나는 직무로 알게 된 정보를 업무상 필요한 곳 외에는 말하지 않는다.' },
+  { g: '사실확인·기록', t: '나는 진술이 엇갈릴 때 목격 확인과 자료로 사실을 확인할 수 있다.' },
+  { g: '교육적 해결 연계', t: '나는 보호자의 어려움을 먼저 듣고, 이후 절차와 문의처를 안내할 수 있다.' }
+];
 function renderCheck() {
-  var g = S.check; if (!g) return render();
+  var g = S.check; if (!g || !g.focus || !g.perf) return render();
   closeLayer();
   var pre = g.need === 'pre';
   if (!CK || CK.phase !== g.need) CK = { phase: g.need, self: [], focus: [], perf: [], fb: [], ord: g.perf.map(function (x, i) { return shuffled(4, 211 + i * 19); }) };
@@ -1506,7 +1518,7 @@ function renderCheck() {
   };
 }
 function renderFb() {
-  var g = S.fbq; if (!g) return render();
+  var g = S.fbq; if (!g || !g.items || !g.items.length) { S.fbq = null; return render(); }
   closeLayer();
   if (!FBS || FBS.round !== g.need) FBS = { round: g.need, a: [], txt: ['', ''] };
   var cnt = fbCount(g.items, FBS.a), need = g.items.length, pil = g.need === 'pilot';
